@@ -65,7 +65,7 @@ class r10k::webhook(
     ensure => $ensure_directory,
     owner  => $user,
     group  => $group,
-    before => File['webhook_init_script'],
+    before => File['webhook_bin'],
   }
 
   if $service_provider == 'systemd' {
