@@ -175,7 +175,7 @@ mco r10k synchronize
 You can sync an individual environment using:
 
 ```shell
-mco r10k deploy <environment>
+mco r10k deploy environment <environment>
 ```
 Note: This implies `-p`
 
@@ -349,6 +349,42 @@ git_webhook { 'web_post_receive_webhook_for_module' :
   provider     => 'github',
 }
 ```
+### Webhook Bitbucket Example
+This is an example of using the webhook with Atlassian Bitbucket (former Stash).
+Requires the `external hooks` addon by https://marketplace.atlassian.com/plugins/com.ngs.stash.externalhooks.external-hooks/server/overview
+and a specific Bitbucket user/pass. 
+Remember to place the `stash_mco.rb` on the bitbucket server an make it executable.
+Enable the webhook over the repository settings `External Async Post Receive Hook`:
+ - Executable: e.g. `/opt/atlassian/bitbucket-data/external-hooks/stash_mco.rb` (see hook_exe)
+ - Positional parameters: `-t http://git.example.com:8088/payload`
+
+```puppet
+# Add deploy key
+git_deploy_key { 'add_deploy_key_to_puppet_control':
+  ensure       => present,
+  name         => $::fqdn,  
+  path         => '/root/.ssh/id_rsa.pub',
+  username     => 'api', 
+  password     => 'pass',
+  project_name => 'project',
+  repo_name    => 'puppet',
+  server_url   => 'https://git.example.com',
+  provider     => 'stash',
+}
+
+# Add webhook
+git_webhook { 'web_post_receive_webhook' :
+  ensure       => present,
+  webhook_url  => 'https://puppet:puppet@hole.in.firewall:8088/module',
+  password     => 'pass',
+  username     => 'api',
+  project_name => 'project',
+  repo_name    => 'puppet',
+  server_url   => 'https://git.example.com',
+  provider     => 'stash',
+  hook_exe     => '/opt/atlassian/bitbucket-data/external-hooks/stash_mco.rb', 
+}
+```
 
 ### GitHub Secret Support
 GitHub webhooks allow the use of a secret value that gets hashed against the payload to pass a
@@ -519,6 +555,33 @@ class { 'r10k::webhook::config':
   slack_proxy_url => 'http://proxy.example.com:3128' # Optional.  Defaults to undef.
 }
 ```
+
+### Webhook Rocket.Chat notifications
+
+You can enable Rocket.Chat notifications for the webhook. You will need a
+Rocket.Chat incoming webhook URL and the `rocket-chat-notifier` gem installed.
+
+To get the Rocket.Chat incoming webhook URL you need to:
+
+1. Go to your Rocket.Chat and then select `Administration-Integrations`.
+2. Choose `New integration`.
+3. Choose `Incoming WebHook`. In the webhook form configure:
+  * `Enabled`: `True`.
+  * `Name`: A name for your webhook.
+  * `Post to Channel`: The channel to post to by default.
+4. Save changes with `Save Changes` bottom.
+
+Then configure the webhook to add your Rocket.Chat Webhook URL.
+
+```puppet
+class { 'r10k::webhook::config':
+  . . .
+  rocketchat_webhook  => <your incoming webhook URL>,  # mandatory for usage
+  rocketchat_username => 'username', # defaults to r10k
+  rocketchat_channel  => '#channel', # defaults to #r10k
+}
+```
+
 
 ### Webhook Default Branch
 

@@ -10,7 +10,11 @@ class r10k::params
   $sources                = undef
   $puppet_master          = true
 
-  $r10k_basedir              = $facts['puppet_environmentpath']
+  if 'puppet_environment' in $facts {
+    $r10k_basedir            = $facts['puppet_environmentpath']
+  } else {
+    $r10k_basedir            = '/etc/puppetlabs/code/environments'
+  }
   $r10k_cache_dir            = "${facts['puppet_vardir']}/r10k"
   $r10k_config_file          = '/etc/puppetlabs/r10k/r10k.yaml'
   $r10k_binary               = 'r10k'
@@ -44,7 +48,7 @@ class r10k::params
   # We check for the function right now instead of $::pe_server_version
   # which does not get populated on agent nodes as some users use r10k
   # with razor see https://github.com/acidprime/r10k/pull/219
-  if $::is_pe == true or $::is_pe == 'true' {
+  if fact('is_pe') == true or fact('is_pe') == 'true' {
     # < PE 4
     $is_pe_server      = true
   }elsif is_function_available('pe_compiling_server_version') {
@@ -145,6 +149,9 @@ class r10k::params
   $webhook_slack_channel         = undef
   $webhook_slack_username        = undef
   $webhook_slack_proxy_url       = undef
+  $webhook_rocketchat_webhook    = undef
+  $webhook_rocketchat_channel    = undef
+  $webhook_rocketchat_username   = undef
   $webhook_configfile_owner      = 'root'
   $webhook_configfile_group      = $root_group
   $webhook_configfile_mode       = '0644'
